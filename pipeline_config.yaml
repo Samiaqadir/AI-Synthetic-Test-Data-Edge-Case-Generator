@@ -1,0 +1,27 @@
+version: "1.0"
+project: "Samia Ecommerce Core Pipeline"
+
+generation:
+  mode: "happy"
+  seed: 2026
+  default_count: 50
+
+schema:
+  type: "sql"
+  path: "examples/ecommerce_pipeline.sql"
+
+tables:
+  users:
+    count: 50
+  orders:
+    count: 50
+  order_items:
+    count: 50
+
+output:
+  directory: "output/pipeline_run/happy_path"
+  formats: ["json", "csv", "sql"]
+
+validation:
+  enabled: true
+  report_path: "output/pipeline_run/happy_path/validation_report.json"

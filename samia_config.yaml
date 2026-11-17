@@ -1,0 +1,36 @@
+version: "1.0"
+project: "Samia AI Synthetic Test Data & Edge-Case Generator"
+
+generation:
+  mode: "mixed"            # options: happy, stress, mixed
+  seed: 42
+  default_count: 15
+  mutation_rate: 0.35      # field-level mutation probability during stress testing
+  mixed_stress_ratio: 0.20 # % of rows in mixed mode that are stress mutated
+
+schema:
+  type: "sql"              # options: sql, json
+  path: "examples/ecommerce.sql"
+
+# Custom per-table generation row counts
+tables:
+  users:
+    count: 20
+  categories:
+    count: 5
+  products:
+    count: 25
+  orders:
+    count: 40
+  order_items:
+    count: 80
+  reviews:
+    count: 30
+
+output:
+  directory: "output"
+  formats: ["json", "csv", "sql"]
+
+validation:
+  enabled: true
+  report_path: "output/validation_report.json"
