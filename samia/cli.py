@@ -333,6 +333,32 @@ def validate_command(
     console.print(f"[green]✓[/green] Full report written to: [underline]{report}[/underline]")
 
 
+@cli.command("ui")
+@click.option("--port", "-p", type=int, default=8501, help="Port to run Streamlit Web UI on")
+@click.option("--host", "-h", type=str, default="localhost", help="Host address to bind Web UI")
+def ui_command(port: int, host: str) -> None:
+    """Launch the interactive Samia Streamlit Web UI workbench."""
+    import subprocess
+    app_path = Path(__file__).parent / "ui" / "app.py"
+    console.print(Panel(
+        f"[bold cyan]Launching Samia QA Test Data Generator Web UI[/bold cyan]\n"
+        f"Server binding: [bold]http://{host}:{port}[/bold]\n"
+        f"Press Ctrl+C to terminate the UI server.",
+        border_style="cyan",
+    ))
+    subprocess.run([
+        sys.executable,
+        "-m",
+        "streamlit",
+        "run",
+        str(app_path),
+        "--server.port",
+        str(port),
+        "--server.address",
+        host,
+    ])
+
+
 def main() -> None:
     """Main program entrypoint."""
     cli()

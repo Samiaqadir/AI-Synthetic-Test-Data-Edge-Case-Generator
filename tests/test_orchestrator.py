@@ -1,10 +1,12 @@
 """Unit tests for GenerationOrchestrator and relational resolution."""
 
 from pathlib import Path
+import zipfile
 import pytest
 
 from samia.engine.orchestrator import GenerationMode, GenerationOrchestrator
 from samia.models.schema import ColumnSchema, NormalizedType, SchemaGraph, TableSchema
+from samia.validator.pydantic_validator import PydanticValidator
 
 
 @pytest.fixture
@@ -15,6 +17,7 @@ def ecommerce_graph() -> SchemaGraph:
     users = TableSchema(name="users")
     users.add_column(ColumnSchema(name="id", normalized_type=NormalizedType.INTEGER, is_primary_key=True))
     users.add_column(ColumnSchema(name="username", normalized_type=NormalizedType.STRING, nullable=False))
+    users.add_column(ColumnSchema(name="email", normalized_type=NormalizedType.EMAIL, nullable=False))
     graph.add_table(users)
 
     # Orders (depends on Users)
@@ -72,9 +75,26 @@ def test_orchestrator_export_formats(ecommerce_graph, tmp_path):
     result.export_sql_inserts(sql_path)
     assert sql_path.exists()
     sql_content = sql_path.read_text(encoding="utf-8")
-    assert "INSERT INTO \"users\"" in sql_content
-    assert "INSERT INTO \"orders\"" in sql_content
+    assert 'INSERT INTO "users"' in sql_content
+    assert 'INSERT INTO "orders"' in sql_content
     # Users insert must appear before orders insert
-    users_pos = sql_content.find("INSERT INTO \"users\"")
-    orders_pos = sql_content.find("INSERT INTO \"orders\"")
+    users_pos = sql_content.find('INSERT INTO "users"')
+    orders_pos = sql_content.find('INSERT INTO "orders"')
     assert users_pos < orders_pos
+
+    # Export ZIP bundle
+    validator = PydanticValidator(schema_graph=ecommerce_graph)
+    report = validator.validate_dataset(result.data, ecommerce_graph)
+    zip_path = tmp_path / "seed_bundle.zip"
+    result.export_zip(zip_path, validation_report=report, schema_content="-- Schema", schema_filename="test.sql")
+    assert zip_path.exists()
+
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        namelist = zf.namelist()
+        assert "sql/seed.sql" in namelist
+        assert "json/full_dataset.json" in namelist
+        assert "csv/users.csv" in namelist
+        assert "csv/orders.csv" in namelist
+        assert "reports/validation_report.json" in namelist
+        assert "reports/qa_validation_summary.md" in namelist
+        assert "schema/test.sql" in namelist

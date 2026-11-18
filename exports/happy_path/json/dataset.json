@@ -1,0 +1,494 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "johnsonjoshua",
+      "email": "donaldgarcia@example.com",
+      "full_name": "garzaanthony",
+      "age": 44,
+      "is_active": true,
+      "created_at": "2025-01-25T15:41:44.897538"
+    },
+    {
+      "id": 2,
+      "username": "williamjohnson",
+      "email": "jennifermiles@example.com",
+      "full_name": "lrobinson",
+      "age": 36,
+      "is_active": true,
+      "created_at": "2025-06-09T10:10:54.474576"
+    },
+    {
+      "id": 3,
+      "username": "blakeerik",
+      "email": "jpeterson@example.com",
+      "full_name": "susanrogers",
+      "age": 32,
+      "is_active": true,
+      "created_at": "2025-01-24T23:03:05.189289"
+    },
+    {
+      "id": 4,
+      "username": "howardmaurice",
+      "email": "lindsay78@apex-cloud.io",
+      "full_name": "dudleynicholas",
+      "age": 33,
+      "is_active": true,
+      "created_at": "2025-12-26T11:11:13.924725"
+    },
+    {
+      "id": 5,
+      "username": "barbara10",
+      "email": "kendragalloway@example.com",
+      "full_name": "michellejames",
+      "age": 18,
+      "is_active": true,
+      "created_at": "2025-10-15T10:02:51.423042"
+    },
+    {
+      "id": 6,
+      "username": "francisco53",
+      "email": "jacqueline19@lumina-retail.com",
+      "full_name": "amandasanchez",
+      "age": 27,
+      "is_active": true,
+      "created_at": "2025-10-21T21:11:59.937379"
+    },
+    {
+      "id": 7,
+      "username": "veronica83",
+      "email": "megan03@techpulse.net",
+      "full_name": "trujillorichard",
+      "age": 35,
+      "is_active": false,
+      "created_at": "2025-01-05T13:27:45.681738"
+    },
+    {
+      "id": 8,
+      "username": "jason76",
+      "email": "ithomas@lumina-retail.com",
+      "full_name": "julieryan",
+      "age": 33,
+      "is_active": true,
+      "created_at": "2026-05-17T21:21:48.285328"
+    },
+    {
+      "id": 9,
+      "username": "zhurst",
+      "email": "jeffrey28@apex-cloud.io",
+      "full_name": "ddavis",
+      "age": 39,
+      "is_active": true,
+      "created_at": "2026-08-09T05:31:07.378366"
+    },
+    {
+      "id": 10,
+      "username": "courtneyconner",
+      "email": "ycarlson@lumina-retail.com",
+      "full_name": "dcarlson",
+      "age": 54,
+      "is_active": true,
+      "created_at": "2025-12-09T17:15:16.404213"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Shannon Smith",
+      "slug": "Race Mr",
+      "description": "Born itself law west then enjoy. Seven medical blood personal success medical current."
+    },
+    {
+      "id": 2,
+      "name": "Christopher Ashley",
+      "slug": "Truth out major born guy",
+      "description": "Around there water beat magazine. Within mouth call process."
+    },
+    {
+      "id": 3,
+      "name": "Carmen Rose",
+      "slug": "Institution deep much role cut",
+      "description": "Yet practice just military building different. Again network open according remain arrive."
+    },
+    {
+      "id": 4,
+      "name": "Andre Rivera",
+      "slug": "Draw protect Democrat car very",
+      "description": "Line six space couple best issue interest. Tell approach president position art rock song. Eat couple large instead."
+    },
+    {
+      "id": 5,
+      "name": "David Leblanc",
+      "slug": "Space task better present",
+      "description": "Why unit support. Image loss ten total. Her world enter six."
+    },
+    {
+      "id": 6,
+      "name": "Jay Bernard",
+      "slug": "Product main couple design around",
+      "description": "Security arm once me. Church whether bag control organization push dog. Walk now often always."
+    },
+    {
+      "id": 7,
+      "name": "Matthew Cunningham",
+      "slug": "Various daughter respond draw",
+      "description": "Public feel first sell. Act perform none beyond. Defense enter value thing these hard citizen."
+    },
+    {
+      "id": 8,
+      "name": "Michele Carr",
+      "slug": "Account stage federal professional voice",
+      "description": "Break blood network evening painting. Data plant enough major town suffer."
+    },
+    {
+      "id": 9,
+      "name": "Jeff Hill",
+      "slug": "Four capital",
+      "description": "Scientist necessary into act. War real chance along."
+    },
+    {
+      "id": 10,
+      "name": "Juan Jordan",
+      "slug": "Final together",
+      "description": "Decide economic bill sister this image."
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "user_id": 6,
+      "status": "completed",
+      "total_amount": 157.53,
+      "shipping_address": "See understand door class son",
+      "created_at": "2025-03-27T13:04:22.816749"
+    },
+    {
+      "id": 2,
+      "user_id": 9,
+      "status": "pending",
+      "total_amount": 94.14,
+      "shipping_address": "Agent say forward us",
+      "created_at": "2026-06-27T05:28:37.978725"
+    },
+    {
+      "id": 3,
+      "user_id": 9,
+      "status": "completed",
+      "total_amount": 108.32,
+      "shipping_address": "Environment skin blue",
+      "created_at": "2026-08-17T07:29:06.832273"
+    },
+    {
+      "id": 4,
+      "user_id": 6,
+      "status": "processing",
+      "total_amount": 44.44,
+      "shipping_address": "Develop staff least figure",
+      "created_at": "2026-06-22T04:41:28.891110"
+    },
+    {
+      "id": 5,
+      "user_id": 4,
+      "status": "completed",
+      "total_amount": 74.55,
+      "shipping_address": "Development process huge",
+      "created_at": "2025-06-09T17:24:39.490990"
+    },
+    {
+      "id": 6,
+      "user_id": 8,
+      "status": "completed",
+      "total_amount": 16.15,
+      "shipping_address": "Whom evidence",
+      "created_at": "2026-03-01T19:13:32.748124"
+    },
+    {
+      "id": 7,
+      "user_id": 5,
+      "status": "pending",
+      "total_amount": 39.67,
+      "shipping_address": "Quickly such former agree",
+      "created_at": "2026-08-20T20:53:32.231899"
+    },
+    {
+      "id": 8,
+      "user_id": 4,
+      "status": "processing",
+      "total_amount": 30.85,
+      "shipping_address": "Condition while enter",
+      "created_at": "2025-02-05T09:32:14.128364"
+    },
+    {
+      "id": 9,
+      "user_id": 9,
+      "status": "processing",
+      "total_amount": 166.05,
+      "shipping_address": "Generation skill job worker",
+      "created_at": "2025-02-10T16:31:19.952253"
+    },
+    {
+      "id": 10,
+      "user_id": 1,
+      "status": "processing",
+      "total_amount": 28.64,
+      "shipping_address": "Couple and job mind southern",
+      "created_at": "2026-04-03T22:43:32.309790"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "category_id": 10,
+      "title": "Engineer, chemical",
+      "sku": "SKU-XBE-6155",
+      "price": 15.07,
+      "stock_qty": 8846,
+      "is_published": true,
+      "created_at": "2026-10-12T08:17:16.301865"
+    },
+    {
+      "id": 2,
+      "category_id": 3,
+      "title": "Lawyer",
+      "sku": "SKU-NUQ-5339",
+      "price": 40.91,
+      "stock_qty": 4284,
+      "is_published": true,
+      "created_at": "2026-07-30T16:04:21.598695"
+    },
+    {
+      "id": 3,
+      "category_id": 6,
+      "title": "Hydrologist",
+      "sku": "SKU-GTQ-4593",
+      "price": 31.93,
+      "stock_qty": 8611,
+      "is_published": true,
+      "created_at": "2025-09-12T12:49:27.403137"
+    },
+    {
+      "id": 4,
+      "category_id": 3,
+      "title": "Operational researcher",
+      "sku": "SKU-SSJ-7916",
+      "price": 41.06,
+      "stock_qty": 5959,
+      "is_published": true,
+      "created_at": "2025-02-19T04:37:27.941861"
+    },
+    {
+      "id": 5,
+      "category_id": 5,
+      "title": "Petroleum engineer",
+      "sku": "SKU-QYR-1188",
+      "price": 43.79,
+      "stock_qty": 8847,
+      "is_published": true,
+      "created_at": "2026-05-18T17:00:42.614820"
+    },
+    {
+      "id": 6,
+      "category_id": 6,
+      "title": "Ecologist",
+      "sku": "SKU-NKT-2827",
+      "price": 23.65,
+      "stock_qty": 33,
+      "is_published": true,
+      "created_at": "2025-09-10T20:11:26.793314"
+    },
+    {
+      "id": 7,
+      "category_id": 5,
+      "title": "Academic librarian",
+      "sku": "SKU-TSN-9201",
+      "price": 68.74,
+      "stock_qty": 1065,
+      "is_published": true,
+      "created_at": "2025-09-28T05:40:06.717515"
+    },
+    {
+      "id": 8,
+      "category_id": 9,
+      "title": "TEFL teacher",
+      "sku": "SKU-MPU-4258",
+      "price": 42.27,
+      "stock_qty": 5304,
+      "is_published": true,
+      "created_at": "2025-10-23T21:01:32.125486"
+    },
+    {
+      "id": 9,
+      "category_id": 6,
+      "title": "Private music teacher",
+      "sku": "SKU-RNG-9005",
+      "price": 25.02,
+      "stock_qty": 8780,
+      "is_published": false,
+      "created_at": "2025-10-29T20:44:56.095175"
+    },
+    {
+      "id": 10,
+      "category_id": 2,
+      "title": "Doctor, general practice",
+      "sku": "SKU-QFS-8962",
+      "price": 34.86,
+      "stock_qty": 6597,
+      "is_published": false,
+      "created_at": "2025-11-29T17:43:58.995128"
+    }
+  ],
+  "order_items": [
+    {
+      "id": 1,
+      "order_id": 3,
+      "product_id": 5,
+      "quantity": 26,
+      "unit_price": 82.09
+    },
+    {
+      "id": 2,
+      "order_id": 7,
+      "product_id": 6,
+      "quantity": 22,
+      "unit_price": 34.04
+    },
+    {
+      "id": 3,
+      "order_id": 4,
+      "product_id": 2,
+      "quantity": 17,
+      "unit_price": 38.76
+    },
+    {
+      "id": 4,
+      "order_id": 4,
+      "product_id": 1,
+      "quantity": 4,
+      "unit_price": 41.82
+    },
+    {
+      "id": 5,
+      "order_id": 1,
+      "product_id": 6,
+      "quantity": 4,
+      "unit_price": 11.18
+    },
+    {
+      "id": 6,
+      "order_id": 4,
+      "product_id": 9,
+      "quantity": 7,
+      "unit_price": 133.41
+    },
+    {
+      "id": 7,
+      "order_id": 8,
+      "product_id": 4,
+      "quantity": 39,
+      "unit_price": 55.77
+    },
+    {
+      "id": 8,
+      "order_id": 2,
+      "product_id": 7,
+      "quantity": 18,
+      "unit_price": 13.52
+    },
+    {
+      "id": 9,
+      "order_id": 1,
+      "product_id": 2,
+      "quantity": 3,
+      "unit_price": 159.28
+    },
+    {
+      "id": 10,
+      "order_id": 2,
+      "product_id": 4,
+      "quantity": 10,
+      "unit_price": 35.09
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "user_id": 3,
+      "product_id": 5,
+      "rating": 3,
+      "comment": "Behavior weight dog financial southern challenge. Each little sure. Lay though offer responsibility. Manager during prevent accept seem show.",
+      "created_at": "2025-02-04T01:42:47.357219"
+    },
+    {
+      "id": 2,
+      "user_id": 2,
+      "product_id": 8,
+      "rating": 4,
+      "comment": "Compare when military anyone eat. Lead soon property write. Fish sense kind spring throughout interview trade knowledge.",
+      "created_at": "2025-03-14T11:21:21.141294"
+    },
+    {
+      "id": 3,
+      "user_id": 9,
+      "product_id": 2,
+      "rating": 1,
+      "comment": "Else easy point she miss phone ever. Require doctor from throw. Catch discuss really relationship.",
+      "created_at": "2025-01-04T03:06:18.771122"
+    },
+    {
+      "id": 4,
+      "user_id": 9,
+      "product_id": 1,
+      "rating": 5,
+      "comment": "My indeed deal information toward once. Task she herself. Wall fear hope.",
+      "created_at": "2026-08-31T12:54:26.493067"
+    },
+    {
+      "id": 5,
+      "user_id": 4,
+      "product_id": 3,
+      "rating": 3,
+      "comment": "Section national owner determine detail job ahead. Protect something right subject try wonder. Agree hour north agree poor career left.",
+      "created_at": "2024-12-24T22:38:30.807715"
+    },
+    {
+      "id": 6,
+      "user_id": 8,
+      "product_id": 4,
+      "rating": 4,
+      "comment": "Deep force seven here sell story. Strong like see appear weight. Practice sit prepare senior wear.",
+      "created_at": "2025-04-12T20:10:17.844189"
+    },
+    {
+      "id": 7,
+      "user_id": 1,
+      "product_id": 3,
+      "rating": 3,
+      "comment": "Charge call prove nor design record short cold.",
+      "created_at": "2026-02-04T19:02:50.702755"
+    },
+    {
+      "id": 8,
+      "user_id": 7,
+      "product_id": 5,
+      "rating": 5,
+      "comment": "Who blue agent find. However resource away real physical big.",
+      "created_at": "2026-06-05T11:50:23.702904"
+    },
+    {
+      "id": 9,
+      "user_id": 8,
+      "product_id": 5,
+      "rating": 3,
+      "comment": "Someone not American mouth. Attention positive actually information majority item. Player stock religious itself safe whole. Pattern try simple let stay.",
+      "created_at": "2026-01-25T00:03:23.280988"
+    },
+    {
+      "id": 10,
+      "user_id": 9,
+      "product_id": 8,
+      "rating": 2,
+      "comment": "Store beautiful think during let. Property from management foot maintain great election evidence. Red everybody act way beat result major serve.",
+      "created_at": "2026-04-06T16:30:26.208097"
+    }
+  ]
+}

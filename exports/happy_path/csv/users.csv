@@ -1,0 +1,11 @@
+id,username,email,full_name,age,is_active,created_at
+1,johnsonjoshua,donaldgarcia@example.com,garzaanthony,44,True,2025-01-25T15:41:44.897538
+2,williamjohnson,jennifermiles@example.com,lrobinson,36,True,2025-06-09T10:10:54.474576
+3,blakeerik,jpeterson@example.com,susanrogers,32,True,2025-01-24T23:03:05.189289
+4,howardmaurice,lindsay78@apex-cloud.io,dudleynicholas,33,True,2025-12-26T11:11:13.924725
+5,barbara10,kendragalloway@example.com,michellejames,18,True,2025-10-15T10:02:51.423042
+6,francisco53,jacqueline19@lumina-retail.com,amandasanchez,27,True,2025-10-21T21:11:59.937379
+7,veronica83,megan03@techpulse.net,trujillorichard,35,False,2025-01-05T13:27:45.681738
+8,jason76,ithomas@lumina-retail.com,julieryan,33,True,2026-05-17T21:21:48.285328
+9,zhurst,jeffrey28@apex-cloud.io,ddavis,39,True,2026-08-09T05:31:07.378366
+10,courtneyconner,ycarlson@lumina-retail.com,dcarlson,54,True,2025-12-09T17:15:16.404213
