@@ -17,7 +17,7 @@ from samia.engine.orchestrator import (
     GenerationMode,
     GenerationOrchestrator,
 )
-from samia.models.schema import SchemaGraph
+from samia.models.schema import CyclicDependencyError, SchemaGraph, SchemaParseError
 from samia.parsers.json_parser import JSONSchemaParser
 from samia.parsers.sql_parser import SQLDDLParser
 from samia.validator.pydantic_validator import PydanticValidator
@@ -155,8 +155,26 @@ def generate_command(
     ))
 
     # 3. Resolve Schema and DAG
-    graph = resolve_schema(effective_sql, effective_json)
-    order = graph.get_topological_order()
+    try:
+        graph = resolve_schema(effective_sql, effective_json)
+        order = graph.get_topological_order()
+    except CyclicDependencyError as exc:
+        console.print(Panel(
+            f"[bold red]Circular foreign key dependency detected:[/bold red]\n{exc}\n\n"
+            f"[yellow]Remediation:[/yellow] Break the cycle by making at least one foreign key nullable "
+            f"or splitting the relationship into an association / junction table.",
+            title="[bold red]DAG Dependency Cycle Error[/bold red]",
+            border_style="red",
+        ))
+        raise click.ClickException(str(exc))
+    except SchemaParseError as exc:
+        console.print(Panel(
+            f"[bold red]DDL Schema parsing failed:[/bold red]\n{exc}\n"
+            + (f"\n[yellow]Faulty Statement:[/yellow]\n{exc.statement}" if getattr(exc, "statement", None) else ""),
+            title="[bold red]Schema Parser Error[/bold red]",
+            border_style="red",
+        ))
+        raise click.ClickException(str(exc))
 
     order_display = " -> ".join([f"[bold]{t}[/bold]" for t in order])
     console.print(f"[bold blue]Topological Generation Order:[/bold blue] {order_display}\n")
@@ -252,8 +270,16 @@ def inspect_command(
     schema_json: Optional[str],
 ) -> None:
     """Inspect schema metadata, extracted constraints, and dependency DAG."""
-    graph = resolve_schema(schema_sql, schema_json)
-    order = graph.get_topological_order()
+    try:
+        graph = resolve_schema(schema_sql, schema_json)
+        order = graph.get_topological_order()
+    except (CyclicDependencyError, SchemaParseError) as exc:
+        console.print(Panel(
+            f"[bold red]Schema resolution failed:[/bold red]\n{exc}",
+            title="[bold red]Inspection Error[/bold red]",
+            border_style="red",
+        ))
+        raise click.ClickException(str(exc))
 
     console.print(Panel("[bold cyan]Schema Architecture & Dependency DAG[/bold cyan]", border_style="cyan"))
     console.print(f"[bold blue]Topological Generation Order:[/bold blue] {' -> '.join(order)}\n")

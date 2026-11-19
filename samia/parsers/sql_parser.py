@@ -12,8 +12,10 @@ from sqlparse.tokens import Keyword, Name, Punctuation, Whitespace
 
 from samia.models.schema import (
     ColumnSchema,
+    ForeignKeyConstraint,
     NormalizedType,
     SchemaGraph,
+    SchemaParseError,
     TableSchema,
 )
 
@@ -109,45 +111,63 @@ class SQLDDLParser:
         re.IGNORECASE,
     )
 
-    def parse_file(self, file_path: str | Path) -> SchemaGraph:
+    def __init__(self) -> None:
+        self.warnings: List[str] = []
+
+    def parse_file(self, file_path: str | Path, strict: bool = False) -> SchemaGraph:
         """Parse SQL DDL from a file."""
         content = Path(file_path).read_text(encoding="utf-8")
-        return self.parse(content)
+        return self.parse(content, strict=strict)
 
-    def parse(self, sql_content: str) -> SchemaGraph:
+    def parse(self, sql_content: str, strict: bool = False) -> SchemaGraph:
         """Parse raw SQL DDL string into a SchemaGraph with all tables and relationships."""
+        self.warnings = []
         graph = SchemaGraph()
         statements = sqlparse.parse(sql_content)
 
+        found_create = False
         for stmt in statements:
             # We care about CREATE TABLE statements
             stmt_str = str(stmt).strip()
             if not re.search(r"CREATE\s+TABLE", stmt_str, re.IGNORECASE):
                 continue
 
+            found_create = True
             table = self._parse_create_table(stmt, stmt_str)
             if table:
                 graph.add_table(table)
+
+        if strict and not found_create and sql_content.strip():
+            raise SchemaParseError("No valid CREATE TABLE statements found in SQL content")
 
         return graph
 
     def _parse_create_table(self, stmt: Statement, stmt_str: str) -> Optional[TableSchema]:
         """Parse a single CREATE TABLE statement."""
+        # Validate balanced parentheses
+        if stmt_str.count("(") != stmt_str.count(")"):
+            raise SchemaParseError("Unbalanced parentheses in CREATE TABLE statement", stmt_str)
+
         # Find table name
         name_match = self.TABLE_NAME_PATTERN.search(stmt_str)
         if not name_match:
-            return None
+            raise SchemaParseError("Could not extract valid table name from CREATE TABLE statement", stmt_str)
 
-        raw_table_name = name_match.group(1)
+        raw_table_name = name_match.group(1).strip()
         table_name = clean_identifier(raw_table_name)
+        if not table_name or not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
+            raise SchemaParseError(f"Invalid table identifier '{table_name}' in CREATE TABLE statement", stmt_str)
+
         table = TableSchema(name=table_name)
 
         # Extract parenthesized body containing columns and constraints
         body = self._extract_body(stmt, stmt_str)
         if not body:
-            return table
+            raise SchemaParseError(f"Table '{table_name}' has an empty or unclosed body definition", stmt_str)
 
         clauses = split_clauses(body)
+        if not clauses:
+            raise SchemaParseError(f"Table '{table_name}' does not contain any column definitions", stmt_str)
 
         # First pass: table-level constraints and column definitions
         for raw_clause in clauses:
@@ -159,13 +179,14 @@ class SQLDDLParser:
             pk_match = self.TABLE_PK_PATTERN.search(clause)
             if pk_match:
                 cols = [clean_identifier(c) for c in pk_match.group(1).split(",")]
+                is_single = len(cols) == 1
                 for col in cols:
                     if col not in table.primary_keys:
                         table.primary_keys.append(col)
                     if col in table.columns:
                         table.columns[col].is_primary_key = True
                         table.columns[col].nullable = False
-                        table.columns[col].is_unique = True
+                        table.columns[col].is_unique = is_single
                 continue
 
             # Table-level Foreign Key
@@ -174,6 +195,13 @@ class SQLDDLParser:
                 child_cols = [clean_identifier(c) for c in fk_match.group(1).split(",")]
                 parent_table = clean_identifier(fk_match.group(2))
                 parent_cols = [clean_identifier(c) for c in fk_match.group(3).split(",")]
+                table.foreign_key_constraints.append(
+                    ForeignKeyConstraint(
+                        child_columns=child_cols,
+                        parent_table=parent_table,
+                        parent_columns=parent_cols,
+                    )
+                )
                 for child_col, parent_col in zip(child_cols, parent_cols):
                     table.foreign_keys[child_col] = (parent_table, parent_col)
                     if child_col in table.columns:
@@ -200,16 +228,20 @@ class SQLDDLParser:
                 table.add_column(col)
 
         # Re-sync any table-level primary keys or foreign keys parsed before columns
+        is_single_pk = len(table.primary_keys) == 1
         for pk in table.primary_keys:
             if pk in table.columns:
                 table.columns[pk].is_primary_key = True
                 table.columns[pk].nullable = False
-                table.columns[pk].is_unique = True
+                table.columns[pk].is_unique = is_single_pk
 
         for col_name, ref in table.foreign_keys.items():
             if col_name in table.columns:
                 table.columns[col_name].is_foreign_key = True
                 table.columns[col_name].foreign_key_ref = ref
+
+        if not table.columns:
+            raise SchemaParseError(f"Table '{table_name}' does not contain any valid column definitions", stmt_str)
 
         return table
 
@@ -261,7 +293,18 @@ class SQLDDLParser:
             precision = int(arg1) if arg1 and arg2 else None
             scale = int(arg2) if arg2 else None
 
-        normalized_type = NormalizedType.from_sql_type(raw_type)
+        # Check for column-level ENUM('val1', 'val2', ...)
+        enum_col_m = re.search(r"\bENUM\s*\(([^)]+)\)", remaining, re.IGNORECASE)
+        if enum_col_m:
+            raw_type = enum_col_m.group(0)
+            normalized_type = NormalizedType.STRING
+        else:
+            normalized_type = NormalizedType.from_sql_type(raw_type)
+
+        if normalized_type == NormalizedType.UNKNOWN:
+            self.warnings.append(
+                f"Table '{table.name}', column '{col_name}': unsupported or unknown SQL type '{raw_type}'. Defaulting to string."
+            )
 
         # Constraints analysis on remaining text
         upper_rem = remaining.upper()
@@ -286,11 +329,22 @@ class SQLDDLParser:
             parent_col = clean_identifier(fk_match.group(2))
             fk_ref = (parent_tbl, parent_col)
             table.foreign_keys[col_name] = fk_ref
+            table.foreign_key_constraints.append(
+                ForeignKeyConstraint(
+                    child_columns=[col_name],
+                    parent_table=parent_tbl,
+                    parent_columns=[parent_col],
+                )
+            )
 
         # Check for CHECK constraints
         min_val: Optional[float] = None
         max_val: Optional[float] = None
         enum_vals: Optional[List[Any]] = None
+
+        if enum_col_m:
+            enum_raw = enum_col_m.group(1).split(",")
+            enum_vals = [clean_identifier(v) for v in enum_raw]
 
         between_m = self.CHECK_BETWEEN_PATTERN.search(remaining)
         if between_m:

@@ -20,7 +20,7 @@ from samia.engine.orchestrator import (
     GenerationResult,
 )
 from samia.models.report import ValidationReport
-from samia.models.schema import NormalizedType, SchemaGraph, TableSchema
+from samia.models.schema import CyclicDependencyError, NormalizedType, SchemaGraph, SchemaParseError, TableSchema
 from samia.parsers.json_parser import JSONSchemaParser
 from samia.parsers.sql_parser import SQLDDLParser
 from samia.validator.pydantic_validator import PydanticValidator
@@ -479,26 +479,33 @@ def main() -> None:
                     else:
                         gen_mode = GenerationMode.STRESS
 
-                    orchestrator = GenerationOrchestrator(
-                        schema_graph=graph,
-                        seed=seed_val,
-                    )
-                    gen_result = orchestrator.generate(
-                        mode=gen_mode,
-                        default_count=global_row_count,
-                        mutation_rate=mutation_rate,
-                        mixed_stress_ratio=mixed_ratio,
-                        corrupt_foreign_keys=corrupt_fk,
-                    )
-                    st.session_state.generation_result = gen_result
+                    try:
+                        orchestrator = GenerationOrchestrator(
+                            schema_graph=graph,
+                            seed=seed_val,
+                        )
+                        gen_result = orchestrator.generate(
+                            mode=gen_mode,
+                            default_count=global_row_count,
+                            mutation_rate=mutation_rate,
+                            mixed_stress_ratio=mixed_ratio,
+                            corrupt_foreign_keys=corrupt_fk,
+                        )
+                        st.session_state.generation_result = gen_result
 
-                    # Automated QA Validation
-                    validator = PydanticValidator(schema_graph=graph)
-                    report = validator.validate_dataset(
-                        dataset=gen_result.data,
-                        schema_graph=graph,
-                    )
-                    st.session_state.validation_report = report
+                        # Automated QA Validation
+                        validator = PydanticValidator(schema_graph=graph)
+                        report = validator.validate_dataset(
+                            dataset=gen_result.data,
+                            schema_graph=graph,
+                        )
+                        st.session_state.validation_report = report
+                    except CyclicDependencyError as exc:
+                        st.error(f"❌ Circular Foreign Key Dependency Detected: {exc}")
+                        return
+                    except Exception as exc:
+                        st.error(f"❌ Generation Error: {exc}")
+                        return
 
                 st.success("🎉 Data generation and automated QA constraint validation complete!")
 
@@ -827,7 +834,11 @@ def main() -> None:
             st.subheader("📐 Schema & Relational Dependency DAG")
 
             # Topological Execution Order
-            topological_order = active_graph.get_topological_order()
+            try:
+                topological_order = active_graph.get_topological_order()
+            except CyclicDependencyError as exc:
+                st.error(f"❌ Circular Foreign Key Dependency Detected: {exc}")
+                return
             st.markdown("#### 🔄 Topological Generation Order")
             st.caption("Child tables depend on parent primary keys and are generated downstream:")
 

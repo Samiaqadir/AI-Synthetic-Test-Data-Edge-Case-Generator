@@ -31,25 +31,28 @@ class NormalizedType(str, Enum):
     def from_sql_type(cls, sql_type: str) -> "NormalizedType":
         """Map raw SQL type string to NormalizedType."""
         clean = sql_type.strip().upper()
-        if any(t in clean for t in ["INT", "SERIAL", "TINYINT", "BIGINT", "SMALLINT"]):
+        if re.search(r"\b(INT|INTEGER|SERIAL|TINYINT|BIGINT|SMALLINT|INT2|INT4|INT8)\b", clean):
             return cls.INTEGER
-        if any(t in clean for t in ["DECIMAL", "NUMERIC", "MONEY"]):
+        if re.search(r"\b(DECIMAL|NUMERIC|MONEY)\b", clean):
             return cls.DECIMAL
-        if any(t in clean for t in ["FLOAT", "DOUBLE", "REAL"]):
+        if re.search(r"\b(FLOAT|DOUBLE|REAL)\b", clean):
             return cls.FLOAT
-        if any(t in clean for t in ["BOOL"]):
+        if re.search(r"\b(BOOL|BOOLEAN)\b", clean):
             return cls.BOOLEAN
-        if "UUID" in clean:
+        if re.search(r"\bUUID\b", clean):
             return cls.UUID
-        if "DATE" == clean:
+        if re.search(r"^\s*DATE\b", clean):
             return cls.DATE
-        if any(t in clean for t in ["DATETIME", "TIMESTAMP", "TIME"]):
+        if re.search(r"\b(DATETIME|TIMESTAMP)\b", clean) or re.search(r"\bTIME\b", clean):
+            # Guard against INTERVAL containing DAY TO SECOND or TIME
+            if "INTERVAL" in clean:
+                return cls.UNKNOWN
             return cls.DATETIME
-        if any(t in clean for t in ["TEXT", "CLOB", "BLOB"]):
+        if re.search(r"\b(TEXT|CLOB|BLOB)\b", clean):
             return cls.TEXT
-        if any(t in clean for t in ["CHAR", "VARCHAR", "STRING"]):
+        if re.search(r"\b(CHAR|VARCHAR|STRING|NVARCHAR)\b", clean):
             return cls.STRING
-        if "JSON" in clean:
+        if re.search(r"\b(JSON|JSONB)\b", clean):
             return cls.JSON
         return cls.UNKNOWN
 
@@ -134,12 +137,22 @@ class ColumnSchema:
 
 
 @dataclass
+class ForeignKeyConstraint:
+    """Represents a single- or multi-column foreign key constraint."""
+    child_columns: List[str]
+    parent_table: str
+    parent_columns: List[str]
+    name: Optional[str] = None
+
+
+@dataclass
 class TableSchema:
     """Represents a relational table definition with columns and constraints."""
     name: str
     columns: Dict[str, ColumnSchema] = field(default_factory=dict)
     primary_keys: List[str] = field(default_factory=list)
     foreign_keys: Dict[str, Tuple[str, str]] = field(default_factory=dict)  # col -> (target_table, target_col)
+    foreign_key_constraints: List[ForeignKeyConstraint] = field(default_factory=list)
     unique_constraints: List[List[str]] = field(default_factory=list)
 
     @property
@@ -149,6 +162,9 @@ class TableSchema:
         for target_table, _ in self.foreign_keys.values():
             if target_table.lower() != self.name.lower():
                 deps.add(target_table)
+        for fk in self.foreign_key_constraints:
+            if fk.parent_table.lower() != self.name.lower():
+                deps.add(fk.parent_table)
         return deps
 
     def add_column(self, column: ColumnSchema) -> None:
@@ -157,6 +173,14 @@ class TableSchema:
             self.primary_keys.append(column.name)
         if column.is_foreign_key and column.foreign_key_ref:
             self.foreign_keys[column.name] = column.foreign_key_ref
+
+
+class SchemaParseError(Exception):
+    """Raised when SQL DDL or schema syntax cannot be parsed or is invalid."""
+    def __init__(self, message: str, statement: Optional[str] = None):
+        super().__init__(message)
+        self.message = message
+        self.statement = statement
 
 
 class CyclicDependencyError(Exception):

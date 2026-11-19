@@ -132,8 +132,9 @@ class PydanticValidator:
         if not graph:
             raise ValueError("SchemaGraph must be provided to validate multi-table dataset")
 
-        # 1. Build parent primary key lookup index for Foreign Key validation
+        # 1. Build parent primary key lookup index and table row records for Foreign Key validation
         pk_index: Dict[str, Dict[str, Set[Any]]] = defaultdict(lambda: defaultdict(set))
+        row_records: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for table_name, rows in dataset.items():
             matched_table = graph.tables.get(table_name)
             if not matched_table:
@@ -145,10 +146,12 @@ class PydanticValidator:
             if not matched_table:
                 continue
 
+            tbl_key = matched_table.name.lower()
+            row_records[tbl_key] = rows
             for row in rows:
                 for pk_col in matched_table.primary_keys:
                     if pk_col in row and row[pk_col] is not None:
-                        pk_index[matched_table.name.lower()][pk_col.lower()].add(row[pk_col])
+                        pk_index[tbl_key][pk_col.lower()].add(row[pk_col])
 
         # 2. Validate each table
         report = ValidationReport()
@@ -167,6 +170,7 @@ class PydanticValidator:
                 table=matched_table,
                 rows=rows,
                 pk_index=pk_index,
+                row_records=row_records,
             )
             report.tables[table_name] = table_summary
             report.total_records += table_summary.total_records
@@ -210,6 +214,7 @@ class PydanticValidator:
         table: TableSchema,
         rows: List[Dict[str, Any]],
         pk_index: Dict[str, Dict[str, Set[Any]]],
+        row_records: Optional[Dict[str, List[Dict[str, Any]]]] = None,
     ) -> TableValidationSummary:
         """Validate all rows of a single table against Pydantic rules, FKs, uniqueness, and regexes."""
         model = self.build_pydantic_model(table)
@@ -217,6 +222,8 @@ class PydanticValidator:
 
         # Track uniqueness
         seen_uniques: Dict[str, Set[Any]] = defaultdict(set)
+        seen_composite_pks: Set[Tuple[Any, ...]] = set()
+        seen_composite_uqs: Dict[Tuple[str, ...], Set[Tuple[Any, ...]]] = defaultdict(set)
 
         for row_idx, row in enumerate(rows):
             row_violations: List[ViolationExample] = []
@@ -360,8 +367,9 @@ class PydanticValidator:
                         summary.violations_by_category.get("Data Types", 0) + 1
                     )
 
-                # 3. Uniqueness Check (Primary Key or UNIQUE column)
-                if col.is_unique or col.is_primary_key:
+                # 3. Uniqueness Check (Single-column Primary Key or UNIQUE column)
+                is_single_pk = len(table.primary_keys) == 1
+                if col.is_unique or (col.is_primary_key and is_single_pk):
                     if val in seen_uniques[col_name]:
                         v = ViolationExample(
                             table_name=table.name,
@@ -413,6 +421,93 @@ class PydanticValidator:
                         summary.violations_by_category["Foreign-Key Integrity"] = (
                             summary.violations_by_category.get("Foreign-Key Integrity", 0) + 1
                         )
+
+            # C. Composite Constraints Check (Composite PK, Composite Unique, Composite FK)
+            if len(table.primary_keys) > 1:
+                pk_tuple = tuple(row.get(k) for k in table.primary_keys)
+                if any(v is None for v in pk_tuple):
+                    v = ViolationExample(
+                        table_name=table.name,
+                        row_index=row_idx,
+                        column_name=", ".join(table.primary_keys),
+                        rule="composite_pk_null",
+                        category="Bounds & Nullability",
+                        value=pk_tuple,
+                        message=f"Composite primary key {table.primary_keys} contains NULL: {pk_tuple}",
+                    )
+                    row_violations.append(v)
+                    summary.sample_violations.append(v)
+                    summary.violations_by_category["Bounds & Nullability"] = (
+                        summary.violations_by_category.get("Bounds & Nullability", 0) + 1
+                    )
+                elif pk_tuple in seen_composite_pks:
+                    v = ViolationExample(
+                        table_name=table.name,
+                        row_index=row_idx,
+                        column_name=", ".join(table.primary_keys),
+                        rule="composite_unique_constraint",
+                        category="Uniqueness Constraints",
+                        value=pk_tuple,
+                        message=f"Duplicate composite primary key {table.primary_keys} value: {pk_tuple}",
+                    )
+                    row_violations.append(v)
+                    summary.sample_violations.append(v)
+                    summary.violations_by_category["Uniqueness Constraints"] = (
+                        summary.violations_by_category.get("Uniqueness Constraints", 0) + 1
+                    )
+                else:
+                    seen_composite_pks.add(pk_tuple)
+
+            for uq_cols in table.unique_constraints:
+                if len(uq_cols) > 1:
+                    uq_tuple = tuple(row.get(k) for k in uq_cols)
+                    if all(v is not None for v in uq_tuple):
+                        uq_key = tuple(uq_cols)
+                        if uq_tuple in seen_composite_uqs[uq_key]:
+                            v = ViolationExample(
+                                table_name=table.name,
+                                row_index=row_idx,
+                                column_name=", ".join(uq_cols),
+                                rule="composite_unique_constraint",
+                                category="Uniqueness Constraints",
+                                value=uq_tuple,
+                                message=f"Duplicate composite UNIQUE constraint {uq_cols} value: {uq_tuple}",
+                            )
+                            row_violations.append(v)
+                            summary.sample_violations.append(v)
+                            summary.violations_by_category["Uniqueness Constraints"] = (
+                                summary.violations_by_category.get("Uniqueness Constraints", 0) + 1
+                            )
+                        else:
+                            seen_composite_uqs[uq_key].add(uq_tuple)
+
+            if row_records and getattr(table, "foreign_key_constraints", None):
+                for fk_c in table.foreign_key_constraints:
+                    if len(fk_c.child_columns) > 1:
+                        child_tuple = tuple(row.get(c) for c in fk_c.child_columns)
+                        if all(v is not None for v in child_tuple):
+                            parent_tbl_key = fk_c.parent_table.lower()
+                            parent_rows = row_records.get(parent_tbl_key, [])
+                            if parent_rows:
+                                matched = any(
+                                    all(p_row.get(pc) == cv for pc, cv in zip(fk_c.parent_columns, child_tuple))
+                                    for p_row in parent_rows
+                                )
+                                if not matched:
+                                    v = ViolationExample(
+                                        table_name=table.name,
+                                        row_index=row_idx,
+                                        column_name=", ".join(fk_c.child_columns),
+                                        rule="composite_foreign_key_referential_integrity",
+                                        category="Foreign-Key Integrity",
+                                        value=child_tuple,
+                                        message=f"Composite foreign key {fk_c.child_columns} value {child_tuple} not found in parent {fk_c.parent_table}{fk_c.parent_columns}",
+                                    )
+                                    row_violations.append(v)
+                                    summary.sample_violations.append(v)
+                                    summary.violations_by_category["Foreign-Key Integrity"] = (
+                                        summary.violations_by_category.get("Foreign-Key Integrity", 0) + 1
+                                    )
 
             if row_violations:
                 summary.invalid_records += 1

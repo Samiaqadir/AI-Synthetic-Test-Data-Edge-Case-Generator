@@ -59,10 +59,13 @@ class GenerationResult:
                     val = row[col]
                     if val is None:
                         vals.append("NULL")
-                    elif isinstance(val, (int, float)):
-                        vals.append(str(val))
                     elif isinstance(val, bool):
                         vals.append("TRUE" if val else "FALSE")
+                    elif isinstance(val, (int, float)):
+                        vals.append(str(val))
+                    elif isinstance(val, (dict, list)):
+                        escaped = json.dumps(val).replace("'", "''")
+                        vals.append(f"'{escaped}'")
                     else:
                         escaped = str(val).replace("'", "''")
                         vals.append(f"'{escaped}'")
